@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Api::V1::ConversationsController, type: :controller do
+RSpec.describe Api::V1::ConversationsController do
   render_views
 
   let!(:user) { Fabricate(:user, account_attributes: { username: 'alice' }) }
@@ -34,6 +34,24 @@ RSpec.describe Api::V1::ConversationsController, type: :controller do
       get :index
       json = body_as_json
       expect(json.size).to eq 1
+    end
+
+    context 'with since_id' do
+      context 'when requesting old posts' do
+        it 'returns conversations' do
+          get :index, params: { since_id: Mastodon::Snowflake.id_at(1.hour.ago, with_random: false) }
+          json = body_as_json
+          expect(json.size).to eq 1
+        end
+      end
+
+      context 'when requesting posts in the future' do
+        it 'returns no conversation' do
+          get :index, params: { since_id: Mastodon::Snowflake.id_at(1.hour.from_now, with_random: false) }
+          json = body_as_json
+          expect(json.size).to eq 0
+        end
+      end
     end
   end
 end
